@@ -97,7 +97,7 @@ int main(void)
 	const Pin SSC =  {GPIOC, GPIO_PIN_9};
 	const Pin SSD = {GPIOB, GPIO_PIN_15};
 	const Pin SSE =  {GPIOC, GPIO_PIN_6};
-	const Pin SSF =  {GPIOC, GPIO_PIN_7};
+	const Pin SSF =  {GPIOB, GPIO_PIN_5};
 	const Pin SSG =  {GPIOC, GPIO_PIN_8};
 
 	// Pre-defining the numbers to be displayed in arrays
@@ -152,7 +152,9 @@ int main(void)
   MX_TIM2_Init();
   MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  // Start timer
+  HAL_TIM_Base_Start(&htim2);
+  timer_val = __HAL_TIM_GET_COUNTER(&htim2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -162,6 +164,32 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
+	uint32_t elapsed = now - timer_val;
+
+	if (elapsed < 10001) {
+		display_num(zero, sizeof(zero) / sizeof(zero[0]));
+	} else if (elapsed < 20001) {
+		display_num(one, sizeof(one) / sizeof(one[0]));
+	} else if (elapsed < 30001) {
+		display_num(two, sizeof(two) / sizeof(two[0]));
+	} else if (elapsed < 40001) {
+		display_num(three, sizeof(three) / sizeof(three[0]));
+	} else if (elapsed < 50001) {
+		display_num(four, sizeof(four) / sizeof(four[0]));
+	} else if (elapsed < 60001) {
+		display_num(five, sizeof(five) / sizeof(five[0]));
+	} else if (elapsed < 70001) {
+		display_num(six, sizeof(six) / sizeof(six[0]));
+	} else if (elapsed < 80001) {
+		display_num(seven, sizeof(seven) / sizeof(seven[0]));
+	} else if (elapsed < 90001) {
+		display_num(eight, sizeof(eight) / sizeof(eight[0]));
+	} else if (elapsed < 100001) {
+		display_num(nine, sizeof(nine) / sizeof(nine[0]));
+	} else {
+		timer_val = now;
+	}
   }
   /* USER CODE END 3 */
 }
@@ -318,13 +346,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_Pin|SSA_Pin|SSB_Pin|SSD_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED_Pin|SSA_Pin|SSB_Pin|SSD_Pin
+                          |SSF_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, SSE_Pin|SSF_Pin|SSG_Pin|SSC_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, SSE_Pin|SSG_Pin|SSC_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED_Pin SSA_Pin SSB_Pin SSD_Pin */
-  GPIO_InitStruct.Pin = LED_Pin|SSA_Pin|SSB_Pin|SSD_Pin;
+  /*Configure GPIO pins : LED_Pin SSA_Pin SSB_Pin SSD_Pin
+                           SSF_Pin */
+  GPIO_InitStruct.Pin = LED_Pin|SSA_Pin|SSB_Pin|SSD_Pin
+                          |SSF_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -336,8 +367,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(BTN_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SSE_Pin SSF_Pin SSG_Pin SSC_Pin */
-  GPIO_InitStruct.Pin = SSE_Pin|SSF_Pin|SSG_Pin|SSC_Pin;
+  /*Configure GPIO pins : SSE_Pin SSG_Pin SSC_Pin */
+  GPIO_InitStruct.Pin = SSE_Pin|SSG_Pin|SSC_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

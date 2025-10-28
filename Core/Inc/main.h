@@ -69,12 +69,12 @@ void Error_Handler(void);
 #define SSD_GPIO_Port GPIOB
 #define SSE_Pin GPIO_PIN_6
 #define SSE_GPIO_Port GPIOC
-#define SSF_Pin GPIO_PIN_7
-#define SSF_GPIO_Port GPIOC
 #define SSG_Pin GPIO_PIN_8
 #define SSG_GPIO_Port GPIOC
 #define SSC_Pin GPIO_PIN_9
 #define SSC_GPIO_Port GPIOC
+#define SSF_Pin GPIO_PIN_5
+#define SSF_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
