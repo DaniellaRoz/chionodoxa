@@ -65,8 +65,6 @@ void Error_Handler(void);
 #define SSA_GPIO_Port GPIOB
 #define SSB_Pin GPIO_PIN_13
 #define SSB_GPIO_Port GPIOB
-#define SSC_Pin GPIO_PIN_14
-#define SSC_GPIO_Port GPIOB
 #define SSD_Pin GPIO_PIN_15
 #define SSD_GPIO_Port GPIOB
 #define SSE_Pin GPIO_PIN_6
@@ -75,6 +73,8 @@ void Error_Handler(void);
 #define SSF_GPIO_Port GPIOC
 #define SSG_Pin GPIO_PIN_8
 #define SSG_GPIO_Port GPIOC
+#define SSC_Pin GPIO_PIN_9
+#define SSC_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 
