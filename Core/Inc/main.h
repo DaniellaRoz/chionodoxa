@@ -61,6 +61,20 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOB
 #define BTN_Pin GPIO_PIN_1
 #define BTN_GPIO_Port GPIOB
+#define SSA_Pin GPIO_PIN_12
+#define SSA_GPIO_Port GPIOB
+#define SSB_Pin GPIO_PIN_13
+#define SSB_GPIO_Port GPIOB
+#define SSC_Pin GPIO_PIN_14
+#define SSC_GPIO_Port GPIOB
+#define SSD_Pin GPIO_PIN_15
+#define SSD_GPIO_Port GPIOB
+#define SSE_Pin GPIO_PIN_6
+#define SSE_GPIO_Port GPIOC
+#define SSF_Pin GPIO_PIN_7
+#define SSF_GPIO_Port GPIOC
+#define SSG_Pin GPIO_PIN_8
+#define SSG_GPIO_Port GPIOC
 
 /* USER CODE BEGIN Private defines */
 
