@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -71,6 +72,62 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
+	volatile uint32_t timer_val;
+
+	// Using the same struct as in the traffic light, I prefer this over the macros
+	typedef struct {
+		GPIO_TypeDef* port;
+		uint16_t pin;
+	} Pin;
+
+	// SS stands for Seven Segment, seven segment display values
+
+	/* Guide:
+	 *  -    A
+	 * | |  F|B
+	 *  -    G
+	 * | |  E|C
+	 *  -    D
+	 */
+
+	const Pin LED =  {GPIOB, GPIO_PIN_0};
+	const Pin BTN =  {GPIOB, GPIO_PIN_1};
+	const Pin SSA = {GPIOB, GPIO_PIN_12};
+	const Pin SSB = {GPIOB, GPIO_PIN_13};
+	const Pin SSC =  {GPIOC, GPIO_PIN_9};
+	const Pin SSD = {GPIOB, GPIO_PIN_15};
+	const Pin SSE =  {GPIOC, GPIO_PIN_6};
+	const Pin SSF =  {GPIOC, GPIO_PIN_7};
+	const Pin SSG =  {GPIOC, GPIO_PIN_8};
+
+	// Pre-defining the numbers to be displayed in arrays
+
+	Pin zero[] = {SSA, SSB, SSC, SSD, SSE, SSF};
+	Pin one[] = {SSB, SSC};
+	Pin two[] = {SSA, SSB, SSG, SSE, SSD};
+	Pin three[] = {SSA, SSB, SSG, SSC, SSD};
+	Pin four[] = {SSF, SSB, SSG, SSC};
+	Pin five[] = {SSA, SSF, SSG, SSC, SSD};
+	Pin six[] = {SSA, SSB, SSC, SSD, SSE, SSG};
+	Pin seven[] = {SSA, SSB, SSC};
+	Pin eight[] = {SSA, SSB, SSC, SSD, SSE, SSF, SSG};
+	Pin nine[] = {SSA, SSB, SSF, SSG, SSC};
+
+	// Defining the function in main as it's an impure function with side effects and will access the pins directly, which have only been defined in main.
+	// When passing in, arrays decay to pointers, so I need to pass the size as an argument with `sizeof(arr) / sizeof(arr[0])`
+	void display_num(Pin *number, int size) {
+		HAL_GPIO_WritePin(SSA.port, SSA.pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SSB.port, SSB.pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SSC.port, SSC.pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SSD.port, SSD.pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SSE.port, SSE.pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SSF.port, SSF.pin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(SSG.port, SSG.pin, GPIO_PIN_RESET);
+
+		for (int i = 0; i < size; i++) {
+			HAL_GPIO_WritePin(number[i].port, number[i].pin, GPIO_PIN_SET);
+		}
+	}
 
   /* USER CODE END 1 */
 
