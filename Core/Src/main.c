@@ -62,7 +62,7 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#define CLEAR_SCREEN "\033[2J\033[H"
 /* USER CODE END 0 */
 
 /**
@@ -79,7 +79,8 @@ int main(void)
 		uint16_t pin;
 	} Pin;
 
-	volatile uint32_t timer_val, milis, seconds, minutes, hours;
+	// Doing print time on its own thing to prevent weird overflow side effects, safer to keep it all separate
+	volatile uint32_t timer_val, print_time, milis, seconds, minutes, hours;
 	milis = seconds = minutes = hours = 0;
 
 	/*
@@ -168,7 +169,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   // Start timer
   HAL_TIM_Base_Start(&htim2);
-  timer_val = __HAL_TIM_GET_COUNTER(&htim2);
+  timer_val, print_time = __HAL_TIM_GET_COUNTER(&htim2);
   uint32_t display_value = 0;
 
   // UART variables
@@ -197,6 +198,7 @@ int main(void)
 		}
 
 		uint32_t elapsed = now - timer_val;
+		uint32_t print_time_elapsed = now - print_time;
 
 		if (elapsed > 9999) {
 			timer_val = now;
@@ -217,6 +219,9 @@ int main(void)
 			} else {
 				display_value++;
 			}
+
+			// Toggle on LED every second for a second-hand feeling
+			HAL_GPIO_TogglePin(LED.port, LED.pin);
 
 			// Switch is inside here, because if this is triggered every time in the loop the display doesn't work properly, it doesn't matter since it only has to update per second anyway
 			switch (display_value) {
@@ -256,11 +261,19 @@ int main(void)
 			}
 		}
 
-		milis = (uint16_t) elapsed / 10;
+		if (print_time_elapsed > 199) {
+			milis = (uint16_t) elapsed / 10;
 
-		// In order for the float conversion to work I had to add the flag `-u _printf_float` to the build settings
-		sprintf(transmit_buffer, "%02dH-%02dM-%02dS-%03dMS\n\r", hours, minutes, seconds, milis);
-		HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
+			// this sacrifices a tiny bit of accuracy for the sake of my sanity (and pretty display), but with perfect every 20ms printing this is actually perfectly accurate
+			if (milis > 999) {
+				milis = 0;
+			}
+
+			sprintf(transmit_buffer, "%s%02dH-%02dM-%02dS-%03dMS\n\r", CLEAR_SCREEN, hours, minutes, seconds, milis);
+			HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
+
+			print_time = now;
+		}
 
 		button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
 		if (button_state == GPIO_PIN_SET) {
@@ -272,7 +285,7 @@ int main(void)
 		}
 	} else {
 		if (!first_run) {
-			sprintf(transmit_buffer, "\n\r\n\rFinal Time: %02dH-%02dM-%02dS-%03dMS\n\r\n\r", hours, minutes, seconds, milis);
+			sprintf(transmit_buffer, "%sFinal Time: %02dH-%02dM-%02dS-%03dMS\n\r\n\r", CLEAR_SCREEN, hours, minutes, seconds, milis);
 			HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
 		}
 
@@ -292,8 +305,11 @@ int main(void)
 			}
 		}
 
-		sprintf(transmit_buffer, "Counting… Press button again to stop.\n\r");
+		sprintf(transmit_buffer, "%sCounting starts shortly, when active press button again to stop.\n\r", CLEAR_SCREEN);
 		HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
+
+		// Buffer so the message about counting can be read, printing it constantly with the timer itself led to awful flickering
+		HAL_Delay(3000);
 
 		first_run = false;
 		first_loop = true;
