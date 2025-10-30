@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,21 +73,28 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-	volatile uint32_t timer_val;
-	volatile uint32_t milis = 0;
-	volatile uint32_t seconds = 50; // With just seconds, this chronometer can count up to 11 930 046 hours before issues would arise
-	volatile uint32_t minutes = 59; // With minutes, we push that up to 83 512 834
-	volatile uint32_t hours = 0; // And finally with hours, we get 4 378 480 129
-	// I could also use 64 bit representation too, but as shown 4 billion hours is plenty for any stopwatch, so there is no point.
-
 	// Using the same struct as in the traffic light, I prefer this over the macros
 	typedef struct {
 		GPIO_TypeDef* port;
 		uint16_t pin;
 	} Pin;
 
-	// SS stands for Seven Segment, seven segment display values
+	volatile uint32_t timer_val, milis, seconds, minutes, hours;
+	milis = seconds = minutes = hours = 0;
 
+	/*
+	With just seconds, this chronometer can count up to 11 930 046 hours before issues would arise
+	With minutes, we push that up to 83 512 834
+	And finally with hours, we get 4 378 480 129
+
+	 I could also use 64 bit representation too, but as shown 4 billion hours is plenty for any stopwatch, so there is no point.
+	*/
+
+	bool active = false;
+	bool first_run = true;
+	bool first_loop = false;
+
+	// SS stands for Seven Segment, seven segment display values
 	/* Guide:
 	 *  -    A
 	 * | |  F|B
@@ -166,6 +174,8 @@ int main(void)
   // UART variables
   char transmit_buffer[100];
   uint8_t timeout = 100;
+
+  GPIO_PinState button_state;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -177,75 +187,116 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	// ONE SECOND = 10000, THIS IS IMPORTANT TO WORK AROUND OVERFLOW MAKING SECOND DISPLAY WEIRD
 	uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
-	uint32_t elapsed = now - timer_val;
 
-	if (elapsed > 9999) {
-		timer_val = now;
-		seconds++;
-
-		if (seconds > 59) {
-			minutes++;
-			seconds = 0;
+	if (active) {
+		// To make sure timer_val is reset as late as possible
+		if (first_loop) {
+			display_num(zero, sizeof(zero) / sizeof(zero[0]));
+			first_loop = false;
+			timer_val = now;
 		}
 
-		if (minutes > 59) {
-			hours++;
-			minutes = 0;
+		uint32_t elapsed = now - timer_val;
+
+		if (elapsed > 9999) {
+			timer_val = now;
+			seconds++;
+
+			if (seconds > 59) {
+				minutes++;
+				seconds = 0;
+			}
+
+			if (minutes > 59) {
+				hours++;
+				minutes = 0;
+			}
+
+			if (display_value >= 9) {
+				display_value = 0;
+			} else {
+				display_value++;
+			}
+
+			// Switch is inside here, because if this is triggered every time in the loop the display doesn't work properly, it doesn't matter since it only has to update per second anyway
+			switch (display_value) {
+				case 0:
+					display_num(zero, sizeof(zero) / sizeof(zero[0]));
+					break;
+				case 1:
+					display_num(one, sizeof(one) / sizeof(one[0]));
+					break;
+				case 2:
+					display_num(two, sizeof(two) / sizeof(two[0]));
+					break;
+				case 3:
+					display_num(three, sizeof(three) / sizeof(three[0]));
+					break;
+				case 4:
+					display_num(four, sizeof(four) / sizeof(four[0]));
+					break;
+				case 5:
+					display_num(five, sizeof(five) / sizeof(five[0]));
+					break;
+				case 6:
+					display_num(six, sizeof(six) / sizeof(six[0]));
+					break;
+				case 7:
+					display_num(seven, sizeof(seven) / sizeof(seven[0]));
+					break;
+				case 8:
+					display_num(eight, sizeof(eight) / sizeof(zero[0]));
+					break;
+				case 9:
+					display_num(nine, sizeof(nine) / sizeof(nine[0]));
+					break;
+				default:
+					display_num(error, sizeof(error) / sizeof(error[0]));
+					break;
+			}
 		}
 
-		if (display_value >= 9) {
-			display_value = 0;
-		} else {
-			display_value++;
+		milis = (uint16_t) elapsed / 10;
+
+		// In order for the float conversion to work I had to add the flag `-u _printf_float` to the build settings
+		sprintf(transmit_buffer, "%02dH-%02dM-%02dS-%03dMS\n\r", hours, minutes, seconds, milis);
+		HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
+
+		button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
+		if (button_state == GPIO_PIN_SET) {
+			while (button_state == GPIO_PIN_SET) {
+				button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
+			}
+			active = false;
+		}
+	} else {
+		if (!first_run) {
+			sprintf(transmit_buffer, "\n\r\n\rFinal Time: %02dH-%02dM-%02dS-%03dMS\n\r\n\r", hours, minutes, seconds, milis);
+			HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
 		}
 
-		// Switch is inside here, because if this is triggered every time in the loop the display doesn't work properly, it doesn't matter since it only has to update per second anyway
-		switch (display_value) {
-			case 0:
-				display_num(zero, sizeof(zero) / sizeof(zero[0]));
+		milis = seconds = minutes = hours = display_value = 0;
+
+		sprintf(transmit_buffer, "Press button to start.\n\r");
+		HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
+
+		while (1) {
+			button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
+			if (button_state == GPIO_PIN_SET) {
+				while (button_state == GPIO_PIN_SET) {
+					button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
+				}
 				break;
-			case 1:
-				display_num(one, sizeof(one) / sizeof(one[0]));
-				break;
-			case 2:
-				display_num(two, sizeof(two) / sizeof(two[0]));
-				break;
-			case 3:
-				display_num(three, sizeof(three) / sizeof(three[0]));
-				break;
-			case 4:
-				display_num(four, sizeof(four) / sizeof(four[0]));
-				break;
-			case 5:
-				display_num(five, sizeof(five) / sizeof(five[0]));
-				break;
-			case 6:
-				display_num(six, sizeof(six) / sizeof(six[0]));
-				break;
-			case 7:
-				display_num(seven, sizeof(seven) / sizeof(seven[0]));
-				break;
-			case 8:
-				display_num(eight, sizeof(eight) / sizeof(zero[0]));
-				break;
-			case 9:
-				display_num(nine, sizeof(nine) / sizeof(nine[0]));
-				break;
-			default:
-				display_num(error, sizeof(error) / sizeof(error[0]));
-				break;
+			}
 		}
+
+		sprintf(transmit_buffer, "Counting… Press button again to stop.\n\r");
+		HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
+
+		first_run = false;
+		first_loop = true;
+		active = true;
 	}
-
-	milis = (uint16_t) elapsed / 10;
-
-	// In order for the float conversion to work I had to add the flag `-u _printf_float` to the build settings
-	sprintf(transmit_buffer, "%02dH-%02dM-%02dS-%03dMS\n\r", hours, minutes, seconds, milis);
-	HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
-
-	// Test for if button works, light on if button pressed
-	GPIO_PinState button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
-	HAL_GPIO_WritePin(LED.port, LED.pin, button_state);
   }
   /* USER CODE END 3 */
 }
