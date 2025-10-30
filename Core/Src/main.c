@@ -90,7 +90,7 @@ int main(void)
 	 *  -    D
 	 */
 
-	const Pin LED =  {GPIOB, GPIO_PIN_0};
+	const Pin LED =  {GPIOB, GPIO_PIN_2};
 	const Pin BTN =  {GPIOB, GPIO_PIN_1};
 	const Pin SSA = {GPIOB, GPIO_PIN_12};
 	const Pin SSB = {GPIOB, GPIO_PIN_13};
@@ -108,10 +108,10 @@ int main(void)
 	Pin three[] = {SSA, SSB, SSG, SSC, SSD};
 	Pin four[] = {SSF, SSB, SSG, SSC};
 	Pin five[] = {SSA, SSF, SSG, SSC, SSD};
-	Pin six[] = {SSA, SSB, SSC, SSD, SSE, SSG};
+	Pin six[] = {SSA, SSF, SSC, SSD, SSE, SSG};
 	Pin seven[] = {SSA, SSB, SSC};
 	Pin eight[] = {SSA, SSB, SSC, SSD, SSE, SSF, SSG};
-	Pin nine[] = {SSA, SSB, SSF, SSG, SSC};
+	Pin nine[] = {SSA, SSB, SSF, SSG, SSC, SSD};
 
 	// Defining the function in main as it's an impure function with side effects and will access the pins directly, which have only been defined in main.
 	// When passing in, arrays decay to pointers, so I need to pass the size as an argument with `sizeof(arr) / sizeof(arr[0])`
@@ -155,6 +155,7 @@ int main(void)
   // Start timer
   HAL_TIM_Base_Start(&htim2);
   timer_val = __HAL_TIM_GET_COUNTER(&htim2);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -190,6 +191,10 @@ int main(void)
 	} else {
 		timer_val = now;
 	}
+
+	// Test for if button works, light on if button pressed
+	GPIO_PinState button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
+	HAL_GPIO_WritePin(LED.port, LED.pin, button_state);
   }
   /* USER CODE END 3 */
 }
@@ -352,6 +357,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, SSE_Pin|SSG_Pin|SSC_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin : BTN_Pin */
+  GPIO_InitStruct.Pin = BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(BTN_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : LED_Pin SSA_Pin SSB_Pin SSD_Pin
                            SSF_Pin */
   GPIO_InitStruct.Pin = LED_Pin|SSA_Pin|SSB_Pin|SSD_Pin
@@ -360,12 +371,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : BTN_Pin */
-  GPIO_InitStruct.Pin = BTN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(BTN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SSE_Pin SSG_Pin SSC_Pin */
   GPIO_InitStruct.Pin = SSE_Pin|SSG_Pin|SSC_Pin;
