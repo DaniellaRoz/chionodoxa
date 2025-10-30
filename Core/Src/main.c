@@ -265,6 +265,7 @@ int main(void)
 		button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
 		if (button_state == GPIO_PIN_SET) {
 			while (button_state == GPIO_PIN_SET) {
+				HAL_Delay(20); // Debounce
 				button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
 			}
 			active = false;
@@ -284,6 +285,7 @@ int main(void)
 			button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
 			if (button_state == GPIO_PIN_SET) {
 				while (button_state == GPIO_PIN_SET) {
+					HAL_Delay(20); // Debounce
 					button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
 				}
 				break;
