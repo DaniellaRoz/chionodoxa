@@ -73,6 +73,11 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	volatile uint32_t timer_val;
+	volatile uint32_t milis = 0;
+	volatile uint32_t seconds = 50; // With just seconds, this chronometer can count up to 11 930 046 hours before issues would arise
+	volatile uint32_t minutes = 59; // With minutes, we push that up to 83 512 834
+	volatile uint32_t hours = 0; // And finally with hours, we get 4 378 480 129
+	// I could also use 64 bit representation too, but as shown 4 billion hours is plenty for any stopwatch, so there is no point.
 
 	// Using the same struct as in the traffic light, I prefer this over the macros
 	typedef struct {
@@ -112,6 +117,7 @@ int main(void)
 	Pin seven[] = {SSA, SSB, SSC};
 	Pin eight[] = {SSA, SSB, SSC, SSD, SSE, SSF, SSG};
 	Pin nine[] = {SSA, SSB, SSF, SSG, SSC, SSD};
+	Pin error[] = {SSA, SSG, SSD};
 
 	// Defining the function in main as it's an impure function with side effects and will access the pins directly, which have only been defined in main.
 	// When passing in, arrays decay to pointers, so I need to pass the size as an argument with `sizeof(arr) / sizeof(arr[0])`
@@ -155,7 +161,11 @@ int main(void)
   // Start timer
   HAL_TIM_Base_Start(&htim2);
   timer_val = __HAL_TIM_GET_COUNTER(&htim2);
+  uint32_t display_value = 0;
 
+  // UART variables
+  char transmit_buffer[100];
+  uint8_t timeout = 100;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -165,32 +175,73 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	// ONE SECOND = 10000, THIS IS IMPORTANT TO WORK AROUND OVERFLOW MAKING SECOND DISPLAY WEIRD
 	uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
 	uint32_t elapsed = now - timer_val;
 
-	if (elapsed < 10001) {
-		display_num(zero, sizeof(zero) / sizeof(zero[0]));
-	} else if (elapsed < 20001) {
-		display_num(one, sizeof(one) / sizeof(one[0]));
-	} else if (elapsed < 30001) {
-		display_num(two, sizeof(two) / sizeof(two[0]));
-	} else if (elapsed < 40001) {
-		display_num(three, sizeof(three) / sizeof(three[0]));
-	} else if (elapsed < 50001) {
-		display_num(four, sizeof(four) / sizeof(four[0]));
-	} else if (elapsed < 60001) {
-		display_num(five, sizeof(five) / sizeof(five[0]));
-	} else if (elapsed < 70001) {
-		display_num(six, sizeof(six) / sizeof(six[0]));
-	} else if (elapsed < 80001) {
-		display_num(seven, sizeof(seven) / sizeof(seven[0]));
-	} else if (elapsed < 90001) {
-		display_num(eight, sizeof(eight) / sizeof(eight[0]));
-	} else if (elapsed < 100001) {
-		display_num(nine, sizeof(nine) / sizeof(nine[0]));
-	} else {
+	if (elapsed > 9999) {
 		timer_val = now;
+		seconds++;
+
+		if (seconds > 59) {
+			minutes++;
+			seconds = 0;
+		}
+
+		if (minutes > 59) {
+			hours++;
+			minutes = 0;
+		}
+
+		if (display_value >= 9) {
+			display_value = 0;
+		} else {
+			display_value++;
+		}
+
+		// Switch is inside here, because if this is triggered every time in the loop the display doesn't work properly, it doesn't matter since it only has to update per second anyway
+		switch (display_value) {
+			case 0:
+				display_num(zero, sizeof(zero) / sizeof(zero[0]));
+				break;
+			case 1:
+				display_num(one, sizeof(one) / sizeof(one[0]));
+				break;
+			case 2:
+				display_num(two, sizeof(two) / sizeof(two[0]));
+				break;
+			case 3:
+				display_num(three, sizeof(three) / sizeof(three[0]));
+				break;
+			case 4:
+				display_num(four, sizeof(four) / sizeof(four[0]));
+				break;
+			case 5:
+				display_num(five, sizeof(five) / sizeof(five[0]));
+				break;
+			case 6:
+				display_num(six, sizeof(six) / sizeof(six[0]));
+				break;
+			case 7:
+				display_num(seven, sizeof(seven) / sizeof(seven[0]));
+				break;
+			case 8:
+				display_num(eight, sizeof(eight) / sizeof(zero[0]));
+				break;
+			case 9:
+				display_num(nine, sizeof(nine) / sizeof(nine[0]));
+				break;
+			default:
+				display_num(error, sizeof(error) / sizeof(error[0]));
+				break;
+		}
 	}
+
+	milis = (uint16_t) elapsed / 10;
+
+	// In order for the float conversion to work I had to add the flag `-u _printf_float` to the build settings
+	sprintf(transmit_buffer, "%02dH-%02dM-%02dS-%03dMS\n\r", hours, minutes, seconds, milis);
+	HAL_UART_Transmit(&huart3, transmit_buffer, strlen(transmit_buffer), timeout);
 
 	// Test for if button works, light on if button pressed
 	GPIO_PinState button_state = HAL_GPIO_ReadPin(BTN.port, BTN.pin);
