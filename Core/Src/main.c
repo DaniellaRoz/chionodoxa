@@ -186,7 +186,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	// ONE SECOND = 10000, THIS IS IMPORTANT TO WORK AROUND OVERFLOW MAKING SECOND DISPLAY WEIRD
+	// ONE SECOND = 10000 IMPORTANT TO REMEMBER
 	uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
 
 	if (active) {
@@ -264,7 +264,7 @@ int main(void)
 		if (print_time_elapsed > 199) {
 			milis = (uint16_t) elapsed / 10;
 
-			// this sacrifices a tiny bit of accuracy for the sake of my sanity (and pretty display), but with perfect every 20ms printing this is actually perfectly accurate
+			// this sacrifices a tiny bit of accuracy for the sake of my sanity (and pretty display), but with perfect every 10ms printing this is actually perfectly accurate
 			if (milis > 999) {
 				milis = 0;
 			}
