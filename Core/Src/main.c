@@ -83,14 +83,6 @@ int main(void)
 	volatile uint32_t timer_val, print_time, milis, seconds, minutes, hours;
 	milis = seconds = minutes = hours = 0;
 
-	/*
-	With just seconds, this chronometer can count up to 11 930 046 hours before issues would arise
-	With minutes, we push that up to 83 512 834
-	And finally with hours, we get 4 378 480 129
-
-	 I could also use 64 bit representation too, but as shown 4 billion hours is plenty for any stopwatch, so there is no point.
-	*/
-
 	bool active = false;
 	bool first_run = true;
 	bool first_loop = false;
