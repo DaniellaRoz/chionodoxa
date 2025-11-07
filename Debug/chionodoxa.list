@@ -903,7 +903,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	// ONE SECOND = 10000, THIS IS IMPORTANT TO WORK AROUND OVERFLOW MAKING SECOND DISPLAY WEIRD
+	// ONE SECOND = 10000 IMPORTANT TO REMEMBER
 	uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
  8000af8:	4ba7      	ldr	r3, [pc, #668]	@ (8000d98 <main+0x6a8>)
  8000afa:	681b      	ldr	r3, [r3, #0]
@@ -1152,7 +1152,7 @@ int main(void)
  8000cf2:	b29b      	uxth	r3, r3
  8000cf4:	f8c7 3210 	str.w	r3, [r7, #528]	@ 0x210
 
-			// this sacrifices a tiny bit of accuracy for the sake of my sanity (and pretty display), but with perfect every 20ms printing this is actually perfectly accurate
+			// this sacrifices a tiny bit of accuracy for the sake of my sanity (and pretty display), but with perfect every 10ms printing this is actually perfectly accurate
 			if (milis > 999) {
  8000cf8:	f8d7 3210 	ldr.w	r3, [r7, #528]	@ 0x210
  8000cfc:	f5b3 7f7a 	cmp.w	r3, #1000	@ 0x3e8
