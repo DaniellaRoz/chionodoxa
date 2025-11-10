@@ -180,10 +180,6 @@ int main(void)
     /* USER CODE BEGIN 3 */
 	// ONE SECOND = 10000 IMPORTANT TO REMEMBER
 	uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
-	// To prevent edge case where the timer value gets reset just before an overflow and the next iteration of the while loop is after the overflow
-	if (__HAL_TIM_GET_COUNTER(&htim2) > 4294966295) {
-		now = 0;
-	}
 
 	if (active) {
 		// To make sure timer_val is reset as late as possible
